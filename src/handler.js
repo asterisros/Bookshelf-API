@@ -1,9 +1,9 @@
 const { nanoid } = require('nanoid');
 const books = require('./books');
 
-// menambahkan data buku
+// handler tambah data buku
 const addBookHandler = (request, h) => {
-  // client mengirimkan request dengan data buku yang diperlukan
+  // client mengirimkan request tambah buku dengan melampirkan data-data
   const {
     name,
     year,
@@ -25,7 +25,7 @@ const addBookHandler = (request, h) => {
     return response;
   }
 
-  // bila read page melebih pageCount maka invalid.
+  // bila read page melebih pageCount maka invalid
   if (readPage > pageCount) {
     const response = h.response({
       status: 'fail',
@@ -35,12 +35,13 @@ const addBookHandler = (request, h) => {
     return response;
   }
 
-  // data buku yang disimpan di server
+  // data buku yang disimpan oleh server
   const id = nanoid(16);
   const finished = pageCount === readPage;
   const insertedAt = new Date().toISOString();
   const updatedAt = insertedAt;
 
+  // tampung seluruh data buku dalam kotak variabel bernama newBook
   const newBook = {
     name,
     year,
@@ -55,12 +56,13 @@ const addBookHandler = (request, h) => {
     insertedAt,
     updatedAt,
   };
+  // masukkan kotak variabel ke lemari bernama books
   books.push(newBook);
 
-  // mengetahui buku telah diinputkan
+  // mengetahui apakah buku telah diinputkan
   const isSuccess = books.filter((book) => book.id === id).length > 0;
 
-  // set status code: created
+  // jika isSuccess true, maka set status code menjadi created
   if (isSuccess) {
     const response = h.response({
       status: 'success',
@@ -73,6 +75,7 @@ const addBookHandler = (request, h) => {
     return response;
   }
 
+  // jika isSuccess gagal, maka set status code menjadi error
   const response = h.response({
     status: 'error',
     message: 'Buku gagal ditambahkan',
@@ -81,20 +84,25 @@ const addBookHandler = (request, h) => {
   return response;
 };
 
-// menampilkan seluruh buku
+// ==/==/==/==/== Menampilkan seluruh buku dengan menerapkan saran pada submission
+
 const getAllBooksHandler = (request, h) => {
   let book = books;
+  
   const { name, reading, finished } = request.query;
 
+  // Tampilkan seluruh buku yang mengandung nama berdasarkan nilai yang diberikan pada query ini secara non-case sensitive
   if (name !== undefined) {
     book = book.filter((b) => b
       .name.toLowerCase().includes(name.toLowerCase()));
   }
 
+  // Bernilai 0 atau 1
   if (reading !== undefined) {
     book = book.filter((b) => b.reading === !!Number(reading));
   }
 
+  // Bernilai 0 atau 1
   if (finished !== undefined) {
     book = book.filter((b) => b.finished === !!Number(finished));
   }
@@ -102,7 +110,8 @@ const getAllBooksHandler = (request, h) => {
   const response = h.response({
     status: 'success',
     data: {
-      // buat object buku dgn value elemen id, nama, dan publisher
+      // buat object buku yang hanya menampilkan id, nama, dan publisher
+      // gunakan map untuk mengambil id, nama, dan publisher dari keseluruhan data detail buku
       books: book.map((item) => ({
         id: item.id,
         name: item.name,
@@ -114,9 +123,13 @@ const getAllBooksHandler = (request, h) => {
   return response;
 };
 
-// menampilkan detail buku
+// ==/==/==/==/== Menampilkan detail buku
+
 const getBookByIdHandler = (request, h) => {
+  // dapatkan id buku 
   const { bookId } = request.params;
+  
+  // filter buku berdasarkan idnya saja pada array books 
   const book = books.filter((item) => item.id === bookId)[0];
   if (book !== undefined) {
     return {
@@ -135,11 +148,13 @@ const getBookByIdHandler = (request, h) => {
   return response;
 };
 
+// ==/==/==/==/== Update Buku berdasarkan ID Buku
+
 const updateBookByIdHandler = (request, h) => {
-  // kita ambil id nya
+  // ambil id buku
   const { bookId } = request.params;
 
-  // ambil data-data buku dari request an
+  // ambil data detail buku dari request Client
   const {
     name,
     year,
@@ -154,13 +169,9 @@ const updateBookByIdHandler = (request, h) => {
   // ambil juga variabel updatedAt untuk diperbarui
   const updatedAt = new Date().toISOString();
 
-  // kan index ini array. Nah elemen arraynya adalah seluruh buku (books)
-  // kita ambil 1 buku aja, karena mau diupdate kan.
   const index = books.findIndex((book) => book.id === bookId);
-
-  // kalau misalnya ada index buku di array, yuk kita ambil data buku itu.
   if (index !== -1) {
-    // kalo client nya nggak menyertakan nama buku, nggak boleh tampilin datanya.
+    // kalo client tidak menyertakan nama buku, tidak boleh tampilkan datanya.
     if (name === undefined) {
       const response = h.response({
         status: 'fail',
@@ -170,8 +181,7 @@ const updateBookByIdHandler = (request, h) => {
       return response;
     }
 
-    // nah trus kalo nilai property readPage > pageCount kan aneh,
-    // jadi ya jangan tampilin datanya.
+    // jangan tampilkan data ketika nilai property readPage > pageCount karena ya aneh
     if (readPage > pageCount) {
       const response = h.response({
         status: 'fail',
@@ -181,10 +191,10 @@ const updateBookByIdHandler = (request, h) => {
       return response;
     }
 
-    // kita bikin property finished dari buku.
+    // tulis property finished dari buku
     const finished = pageCount === readPage;
 
-    // trus kita ambil deh semua data detail dari bukunya.
+    // ambil semua data detail dari bukunya
     books[index] = {
       ...books[index],
       name,
@@ -199,7 +209,6 @@ const updateBookByIdHandler = (request, h) => {
       updatedAt,
     };
 
-    // nah kalau sudah, kita tampilkan responsenya
     const response = h.response({
       status: 'success',
       message: 'Buku berhasil diperbarui',
@@ -208,7 +217,6 @@ const updateBookByIdHandler = (request, h) => {
     return response;
   }
 
-  // kalau gagal, kita kasih response juga ya.
   const response = h.response({
     status: 'fail',
     message: 'Gagal memperbarui buku. Id tidak ditemukan',
@@ -217,17 +225,17 @@ const updateBookByIdHandler = (request, h) => {
   return response;
 };
 
-// menghapus buku
+// ==/==/==/==/== Menghapus Buku
+
 const deleteBookByIdHandler = (request, h) => {
   const { bookId } = request.params;
 
   // dapatkan index dari objek buku sesuai dengan id yang didapat
   const index = books.findIndex((item) => item.id === bookId);
 
-  // kalau ada elemen objek buku di array index, yuk kita ambil untuk dihapus.
   if (index !== -1) {
+  // hapus data bukunya
     books.splice(index, 1);
-    // kita kasih response berhasil dihapus
     const response = h.response({
       status: 'success',
       message: 'Buku berhasil dihapus',
@@ -236,7 +244,6 @@ const deleteBookByIdHandler = (request, h) => {
     return response;
   }
 
-  // kalau gagal dihapus, kita berikan response juga.
   const response = h.response({
     status: 'fail',
     message: 'Buku gagal dihapus. Id tidak ditemukan',
@@ -245,7 +252,7 @@ const deleteBookByIdHandler = (request, h) => {
   return response;
 };
 
-// kita export fungsi-fungsi nya untuk digunakan di routes.js
+// export fungsi-fungsi nya untuk digunakan di routes.js
 module.exports = {
   addBookHandler,
   getAllBooksHandler,
